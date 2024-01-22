@@ -1,0 +1,36 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'netd_core'
+require 'logger'
+require 'socket'
+
+def detect_already_running(socket_path, logger)
+  return unless File.exist?(socket_path)
+
+  logger.warn('Socket path exists, detecting crash')
+  begin
+    UNIXSocket.open(socket_path).close
+  rescue Errno::ECONNREFUSED
+    logger.info('crash detected, cleaning up')
+    File.unlink(socket_path)
+    return
+  end
+  logger.fatal('Server appears to be running already')
+end
+
+def main
+  logger = Logger.new("#{Dir.home}/.local/share/netd.log")
+  logger.level = Logger::INFO
+
+  socket_path = "#{Dir.home}/.local/run/"
+  Dir.mkdir(socket_path) unless Dir.exist?(socket_path)
+  socket_path += 'netd.sock'
+
+  detect_already_running(socket_path, logger)
+
+  server = CNetD.new socket_path
+  server.server_main
+end
+
+main
