@@ -25,11 +25,11 @@ def main
 
   socket_path = "#{Dir.home}/.local/run/"
   Dir.mkdir(socket_path) unless Dir.exist?(socket_path)
-  socket_path += 'netd.sock'
+  socket_path += 'netd.socket'
 
   detect_already_running(socket_path, logger)
 
-  server = CNetD.new socket_path
+  server = CNetD.new(socket_path, logger)
   server.server_main
 end
 

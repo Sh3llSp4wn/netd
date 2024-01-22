@@ -40,12 +40,12 @@ class OperationRequest
     }
   end
 
-  def self.local_port_forward(bind_port, bind_addr, remote_port, remote_addr)
-    "#{LOCAL_PORT_FORWARD}|#{bind_addr}|#{bind_port}|#{remote_addr}|#{remote_port}"
+  def self.local_port_forward(host, bind_port, bind_addr, remote_port, remote_addr)
+    "#{LOCAL_PORT_FORWARD}|#{host}|#{bind_addr}|#{bind_port}|#{remote_addr}|#{remote_port}"
   end
 
-  def self.remote_port_forward(bind_port, bind_addr, local_port, local_addr)
-    "#{REMOTE_PORT_FORWARD}|#{bind_addr}|#{bind_port}|#{local_addr}|#{local_port}"
+  def self.remote_port_forward(host, bind_port, bind_addr, local_port, local_addr)
+    "#{REMOTE_PORT_FORWARD}|#{host}|#{bind_addr}|#{bind_port}|#{local_addr}|#{local_port}"
   end
 
   def malformed_request

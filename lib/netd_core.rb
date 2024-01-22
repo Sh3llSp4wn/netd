@@ -6,9 +6,10 @@ require 'netd_core/netop'
 # the server class of cnetd
 class CNetD
   # the server class of cnetd
-  def initialize(socket_path)
+  def initialize(socket_path, logger)
     @path = socket_path
     @net_ops = []
+    @logger = logger
   end
 
   def current_net_ops
@@ -26,6 +27,7 @@ class CNetD
     else
       raise 'how did you get here?'
     end
+    soc.puts 'OKAY|'
   end
 
   def server_main
@@ -33,8 +35,15 @@ class CNetD
       loop do
         soc = serv.accept
         line = soc.readline
-        request_args = OperationRequest.new(line).parse
-        dispatch_command(request_args, soc)
+        @logger.info(line)
+        dispatch_command(OperationRequest.new(line).parse, soc)
+      rescue RuntimeError => e
+        @logger.error(e.backtrace)
+        @logger.error(e.message)
+      rescue EOFError
+        @logger.error('Empty Request')
+      rescue Errno::EPIPE
+        @logger.error('Incomplete Request')
       end
     end
   end
