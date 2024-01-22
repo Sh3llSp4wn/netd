@@ -1,0 +1,87 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'netd_core'
+require 'logger'
+require 'dry/cli'
+
+module NetC
+  # ahhh
+  module Command
+    extend Dry::CLI::Registry
+
+    # list current forwards
+    class List < Dry::CLI::Command
+      # list current forwards
+      desc 'List the currently registered port forwards'
+      def call(**)
+        UNIXSocket.open("#{Dir.home}/.local/run/netd.socket") do |socket|
+          socket.puts 'list|'
+          puts socket.getline
+        end
+      end
+    end
+
+    module PortFwd
+      # Local port forward
+      class Local < Dry::CLI::Command
+        desc 'Create a new local port forward'
+        option :bind_addr, type: :String, default: '127.0.0.1', desc: 'Host address to bind to'
+        option :bind_port, type: :int, default: 8000, desc: 'Host port to bind to'
+        option :remote_addr, type: :String, default: '127.0.0.1', desc: 'Remote address to connect to'
+        option :remote_port, type: :int, default: 0, desc: 'Remote port to connect to', required: true
+
+        def call(bind_addr:, bind_port:, remote_addr:, remote_port:, **)
+          UNIXSocket.open("#{Dir.home}/.local/run/netd.socket") do |socket|
+            socket.puts OperationRequest.local_port_forward(bind_port, bind_addr, remote_port, remote_addr)
+            puts socket.getline
+          end
+        end
+      end
+
+      # Remote port forward
+      class Remote < Dry::CLI::Command
+        desc 'Create a new remote port forward'
+        option :bind_addr, type: :String, default: '127.0.0.1', desc: 'Remote address to bind to'
+        option :bind_port, type: :int, default: 0, desc: 'Remote port to bind to', required: true
+        option :local_addr, type: :String, default: '127.0.0.1', desc: 'Local address to connect to'
+        option :local_port, type: :int, default: 0, desc: 'Local port to connect to', required: true
+
+        def call(bind_addr:, bind_port:, local_addr:, local_port:, **)
+          UNIXSocket.open("#{Dir.home}/.local/run/netd.socket") do |socket|
+            socket.puts OperationRequest.remote_port_forward(bind_port, bind_addr, local_port, local_addr)
+            puts socket.getline
+          end
+        end
+      end
+    end
+
+    def server_not_running
+      raise 'server not running'
+    end
+
+    register 'pfwd', aliases: ['p'] do |prefix|
+      prefix.register 'local', PortFwd::Local
+      prefix.register 'remote', PortFwd::Remote
+    end
+  end
+end
+
+def check_connection(socket_path)
+  return false unless File.exist?(socket_path)
+
+  begin
+    UNIXSocket.open(socket_path).close
+  rescue Errno::ECONNREFUSED
+    false
+  end
+  true
+end
+
+def main
+  socket_path = "#{Dir.home}/.local/run/netd.socket"
+  server_not_running unless check_connection(socket_path)
+  Dry::CLI.new(NetC::Command).call
+end
+
+main
