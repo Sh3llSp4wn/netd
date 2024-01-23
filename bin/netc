@@ -3,6 +3,9 @@
 
 require 'netd_core'
 require 'logger'
+require 'zlib'
+require 'base64'
+
 require 'dry/cli'
 
 module NetC
@@ -10,12 +13,33 @@ module NetC
   module Command
     extend Dry::CLI::Registry
 
+    def self.connect_to_netd(&block)
+      UNIXSocket.open("#{Dir.home}/.local/run/netd.socket", &block)
+    rescue Errno::ECONNREFUSED => e
+      puts "NetD server does not appear to be running #{e}"
+    end
+
+    # install the service file
+    class Install < Dry::CLI::Command
+      desc 'Install service file to systemd user directory'
+      def call(**)
+        service_file_data = 'eJwljLEKgzAURfd8RZaueUJnl2KHLl1EOohDjFcNvMby8pT69xW7He65nLZJUTtTIQeJH41LKpsMsYwNbA/aYoAdF7FPaGVMW/+nzty/CLV60ZLWLNTHRLL2u73M5HgJninPXkAT3qegqytccf4SdDhSj5TVM3fm5ZNiuO3lgNGvrO7ITlDzAyzzNxM='
+        service_file = Zlib::Inflate.inflate(Base64.decode64(service_file_data))
+        fname = "#{Dir.home}/.config/systemd/user/netd.service"
+        File.write(fname, service_file)
+        puts "Wrote service file to #{fname}"
+        puts "To enable the service, execute the following:\n"
+        puts 'systemctl --user enable netd.service'
+        puts 'systemctl --user start netd.service'
+      end
+    end
+
     # list current forwards
     class List < Dry::CLI::Command
       # list current forwards
       desc 'List the currently registered port forwards'
       def call(**)
-        UNIXSocket.open("#{Dir.home}/.local/run/netd.socket") do |socket|
+        NetC::Command.connect_to_netd do |socket|
           socket.puts 'list|'
           puts socket.readline
         end
@@ -33,11 +57,10 @@ module NetC
         option :remote_port, type: :int, default: 0, desc: 'Remote port to connect to', required: true
 
         def call(host:, bind_addr:, bind_port:, remote_addr:, remote_port:, **)
-          UNIXSocket.open("#{Dir.home}/.local/run/netd.socket") do |socket|
+          NetC::Command.connect_to_netd do |socket|
             socket.puts OperationRequest.local_port_forward(host, bind_port, bind_addr, remote_port, remote_addr)
             puts socket.readline
           end
-          puts '2'
         end
       end
 
@@ -51,15 +74,14 @@ module NetC
         option :local_port, type: :int, default: 0, desc: 'Local port to connect to', required: true
 
         def call(host:, bind_addr:, bind_port:, local_addr:, local_port:, **)
-          UNIXSocket.open("#{Dir.home}/.local/run/netd.socket") do |socket|
-            line = OperationRequest.remote_port_forward(bind_port, bind_addr, local_port, local_addr)
-            puts line
+          NetC::Command.connect_to_netd do |socket|
             socket.puts OperationRequest.remote_port_forward(host, bind_port, bind_addr, local_port, local_addr)
-            puts socket.getline
+            puts socket.readline
           end
         end
       end
     end
+    register 'install', Install
     register 'list', List
     register 'pfwd', aliases: ['p'] do |prefix|
       prefix.register 'local', PortFwd::Local
