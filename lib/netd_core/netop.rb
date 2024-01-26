@@ -3,6 +3,7 @@
 require 'net/ssh'
 require 'socket'
 
+# netd namespace
 module NetD
   # encapsulates a currently running network operation
   class NetworkOperation
@@ -85,9 +86,13 @@ module NetD
   end
 
   def test_setup_port_forwards
-    lpfwd = LocalPortForward.new({  'request': 'lpfwd', 'host': 'localhost', 'bind_port': 2222, 'bind_addr': 'localhost',
+    lpfwd = LocalPortForward.new({  'request': 'lpfwd',
+                                    'host': 'localhost',
+                                    'bind_port': 2222, 'bind_addr': 'localhost',
                                     'remote_port': 2223, 'remote_addr': 'localhost' })
-    rpfwd = RemotePortForward.new({ 'request': 'rpfwd', 'host': 'localhost', 'bind_port': 2224, 'bind_addr': 'localhost',
+    rpfwd = RemotePortForward.new({ 'request': 'rpfwd',
+                                    'host': 'localhost',
+                                    'bind_port': 2224, 'bind_addr': 'localhost',
                                     'local_port': 2223, 'local_addr': 'localhost' })
     sleep(1) # let the threads finish setting up
     [lpfwd, rpfwd]

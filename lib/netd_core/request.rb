@@ -2,6 +2,7 @@
 
 # parse requests from a pipe delimited line
 module NetD
+  # encapsulate a request
   class OperationRequest
     LOCAL_PORT_FORWARD  = 'lpfwd'
     REMOTE_PORT_FORWARD = 'rpfwd'
