@@ -4,7 +4,7 @@ require 'netd_core/request'
 require 'netd_core/netop'
 
 # the server class of netd
-class NetD
+class NetDSvr
   # the server class of netd
   def initialize(socket_path, logger)
     @path = socket_path
@@ -22,7 +22,7 @@ class NetD
   end
 
   def self.get_direction(command)
-    command == OperationRequest::LOCAL_PORT_FORWARD ? 'remote' : 'local'
+    command == NetD::OperationRequest::LOCAL_PORT_FORWARD ? 'remote' : 'local'
   end
 
   def self.parse_line(line)
@@ -30,7 +30,7 @@ class NetD
     req = { 'request': tokens[0], 'host': tokens[1], 'bind_addr': tokens[2], 'bind_port': tokens[3] }
     return if tokens[0] == 'OKAY'
 
-    direction = NetD.get_direction(tokens[0])
+    direction = NetDSvr.get_direction(tokens[0])
     req["#{direction}_addr"] = tokens[4]
     req["#{direction}_port"] = tokens[5]
     req
@@ -40,7 +40,7 @@ class NetD
     line = sock.readline.chomp
     number_of_lines = line[0..-2].to_i
     number_of_lines.times do
-      ap NetD.parse_line sock.readline.chomp
+      ap NetDSvr.parse_line sock.readline.chomp
     end
   end
 
@@ -50,11 +50,11 @@ class NetD
 
   def dispatch_command(request_args, server_socket)
     case request_args[:request]
-    when OperationRequest::LOCAL_PORT_FORWARD
-      @net_ops << LocalPortForward.new(request_args)
-    when OperationRequest::REMOTE_PORT_FORWARD
-      @net_ops << RemotePortForward.new(request_args)
-    when OperationRequest::LIST_FORWARDS
+    when NetD::OperationRequest::LOCAL_PORT_FORWARD
+      @net_ops << NetD::LocalPortForward.new(request_args)
+    when NetD::OperationRequest::REMOTE_PORT_FORWARD
+      @net_ops << NetD::RemotePortForward.new(request_args)
+    when NetD::OperationRequest::LIST_FORWARDS
       server_socket.puts("#{current_net_ops.length}|\n#{current_net_ops.join("\n")}")
     else
       raise 'how did you get here?'
@@ -65,7 +65,7 @@ class NetD
     UNIXServer.open(@path) do |serv|
       loop do
         server_socket = serv.accept
-        dispatch_command(OperationRequest.new(server_socket.readline).parse, server_socket)
+        dispatch_command(NetD::OperationRequest.new(server_socket.readline).parse, server_socket)
         server_socket.puts 'OKAY|'
       rescue EOFError, Errno::EPIPE, RuntimeError => e
         @logger.error("Malformed Request: #{e.message}\n#{e.backtrace} ")

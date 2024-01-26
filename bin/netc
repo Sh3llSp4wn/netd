@@ -37,9 +37,9 @@ module NetC
       # list current forwards
       desc 'List the currently registered port forwards'
       def call(**)
-        NetD.connect_to_netd do |socket|
+        NetDSvr.connect_to_netd do |socket|
           socket.puts 'list|'
-          NetD.parse_list socket
+          NetDSvr.parse_list socket
         end
       end
     end
@@ -55,8 +55,8 @@ module NetC
         def call(host:, bind:, remote:, **)
           bind_addr, bind_port = bind.split(':')
           remote_addr, remote_port = remote.split(':')
-          NetD.connect_to_netd do |socket|
-            socket.puts OperationRequest.local_port_forward(
+          NetDSvr.connect_to_netd do |socket|
+            socket.puts NetD::OperationRequest.local_port_forward(
               host,
               bind_port.to_i, bind_addr,
               remote_port.to_i, remote_addr
@@ -76,8 +76,8 @@ module NetC
         def call(host:, bind:, local:, **)
           bind_addr, bind_port = bind.split(':')
           local_addr, local_port = local.split(':')
-          NetD.connect_to_netd do |socket|
-            socket.puts OperationRequest.remote_port_forward(
+          NetDSvr.connect_to_netd do |socket|
+            socket.puts NetD::OperationRequest.remote_port_forward(
               host,
               bind_port.to_i, bind_addr,
               local_port.to_i, local_addr
