@@ -29,7 +29,7 @@ def main
 
   detect_already_running(socket_path, logger)
 
-  server = CNetD.new(socket_path, logger)
+  server = NetD.new(socket_path, logger)
   server.server_main
 end
 

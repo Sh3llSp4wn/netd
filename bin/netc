@@ -7,23 +7,21 @@ require 'zlib'
 require 'base64'
 
 require 'dry/cli'
+require 'awesome_print'
 
 module NetC
-  # ahhh
+  # convention for dry/cli
   module Command
+    # required to implement a cli command
     extend Dry::CLI::Registry
-
-    def self.connect_to_netd(&block)
-      UNIXSocket.open("#{Dir.home}/.local/run/netd.socket", &block)
-    rescue Errno::ECONNREFUSED => e
-      puts "NetD server does not appear to be running #{e}"
-    end
 
     # install the service file
     class Install < Dry::CLI::Command
       desc 'Install service file to systemd user directory'
       def call(**)
-        service_file_data = 'eJwljLEKgzAURfd8RZaueUJnl2KHLl1EOohDjFcNvMby8pT69xW7He65nLZJUTtTIQeJH41LKpsMsYwNbA/aYoAdF7FPaGVMW/+nzty/CLV60ZLWLNTHRLL2u73M5HgJninPXkAT3qegqytccf4SdDhSj5TVM3fm5ZNiuO3lgNGvrO7ITlDzAyzzNxM='
+        service_file_data = 'eJwljLEKgzAURfd8RZaueUJnl2KHLl1EOohDjFcNvMby8pT69xW7He65nLZJUT' \
+                            'tTIQeJH41LKpsMsYwNbA/aYoAdF7FPaGVMW/+nzty/CLV60ZLWLNTHRLL2u73M5HgJninPXkAT3qegqy' \
+                            'tccf4SdDhSj5TVM3fm5ZNiuO3lgNGvrO7ITlDzAyzzNxM='
         service_file = Zlib::Inflate.inflate(Base64.decode64(service_file_data))
         fname = "#{Dir.home}/.config/systemd/user/netd.service"
         File.write(fname, service_file)
@@ -39,9 +37,9 @@ module NetC
       # list current forwards
       desc 'List the currently registered port forwards'
       def call(**)
-        NetC::Command.connect_to_netd do |socket|
+        NetD.connect_to_netd do |socket|
           socket.puts 'list|'
-          puts socket.readline
+          NetD.parse_list socket
         end
       end
     end
@@ -51,14 +49,18 @@ module NetC
       class Local < Dry::CLI::Command
         desc 'Create a new local port forward'
         option :host, type: :String, default: '127.0.0.1', desc: 'Host address to bind to', required: true
-        option :bind_addr, type: :String, default: '127.0.0.1', desc: 'Host address to bind to'
-        option :bind_port, type: :int, default: 8000, desc: 'Host port to bind to'
-        option :remote_addr, type: :String, default: '127.0.0.1', desc: 'Remote address to connect to'
-        option :remote_port, type: :int, default: 0, desc: 'Remote port to connect to', required: true
+        option :bind, type: :String, default: '127.0.0.1:8000', desc: 'Host address to bind to in <ip>:<port> format'
+        option :remote, type: :String, desc: 'Remote address to connect to'
 
-        def call(host:, bind_addr:, bind_port:, remote_addr:, remote_port:, **)
-          NetC::Command.connect_to_netd do |socket|
-            socket.puts OperationRequest.local_port_forward(host, bind_port, bind_addr, remote_port, remote_addr)
+        def call(host:, bind:, remote:, **)
+          bind_addr, bind_port = bind.split(':')
+          remote_addr, remote_port = remote.split(':')
+          NetD.connect_to_netd do |socket|
+            socket.puts OperationRequest.local_port_forward(
+              host,
+              bind_port.to_i, bind_addr,
+              remote_port.to_i, remote_addr
+            )
             puts socket.readline
           end
         end
@@ -68,14 +70,18 @@ module NetC
       class Remote < Dry::CLI::Command
         desc 'Create a new remote port forward'
         option :host, type: :String, default: '127.0.0.1', desc: 'Host address to bind to', required: true
-        option :bind_addr, type: :String, default: '127.0.0.1', desc: 'Remote address to bind to'
-        option :bind_port, type: :int, default: 0, desc: 'Remote port to bind to', required: true
-        option :local_addr, type: :String, default: '127.0.0.1', desc: 'Local address to connect to'
-        option :local_port, type: :int, default: 0, desc: 'Local port to connect to', required: true
+        option :bind, type: :String, default: '127.0.0.1:8000', desc: 'Remote address to bind to in <ip>:<port> format'
+        option :local, type: :String, desc: 'Local address to connect to'
 
-        def call(host:, bind_addr:, bind_port:, local_addr:, local_port:, **)
-          NetC::Command.connect_to_netd do |socket|
-            socket.puts OperationRequest.remote_port_forward(host, bind_port, bind_addr, local_port, local_addr)
+        def call(host:, bind:, local:, **)
+          bind_addr, bind_port = bind.split(':')
+          local_addr, local_port = local.split(':')
+          NetD.connect_to_netd do |socket|
+            socket.puts OperationRequest.remote_port_forward(
+              host,
+              bind_port.to_i, bind_addr,
+              local_port.to_i, local_addr
+            )
             puts socket.readline
           end
         end
