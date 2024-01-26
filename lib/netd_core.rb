@@ -40,7 +40,7 @@ class NetD
     line = sock.readline.chomp
     number_of_lines = line[0..-2].to_i
     number_of_lines.times do
-    ap NetD.parse_line sock.readline.chomp
+      ap NetD.parse_line sock.readline.chomp
     end
   end
 
