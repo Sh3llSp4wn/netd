@@ -6,11 +6,18 @@ require 'logger'
 require 'socket'
 
 def detect_already_running(socket_path, logger)
+  # if the file does not exist, the server
+  # cannot be running
   return unless File.exist?(socket_path)
 
+  # attempt to detect crash
   logger.warn('Socket path exists, detecting crash')
+  # if the connection does not except,
+  # a server is running
   begin
     UNIXSocket.open(socket_path).close
+  # connection refused means server is not running
+  # so clean-up the old socket file
   rescue Errno::ECONNREFUSED
     logger.info('crash detected, cleaning up')
     File.unlink(socket_path)
@@ -20,15 +27,18 @@ def detect_already_running(socket_path, logger)
 end
 
 def main
+  # setup logger
   logger = Logger.new("#{Dir.home}/.local/share/netd.log")
   logger.level = Logger::INFO
 
+  # setup and validate the unix socket path
   socket_path = "#{Dir.home}/.local/run/"
   Dir.mkdir(socket_path) unless Dir.exist?(socket_path)
   socket_path += 'netd.socket'
 
   detect_already_running(socket_path, logger)
 
+  # setup the server
   server = NetDSvr.new(socket_path, logger)
   server.server_main
 end

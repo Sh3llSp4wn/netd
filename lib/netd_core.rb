@@ -21,15 +21,19 @@ class NetDSvr
     puts "NetD server does not appear to be running #{e}"
   end
 
+  # if local then the field is 'remote' if remote the command requires 'local'
   def self.get_direction(command)
     command == NetD::OperationRequest::LOCAL_PORT_FORWARD ? 'remote' : 'local'
   end
 
   def self.parse_line(line)
     tokens = line.split('|')
+    # common to both commands
     req = { 'request': tokens[0], 'host': tokens[1], 'bind_addr': tokens[2], 'bind_port': tokens[3] }
+    # detect last line
     return if tokens[0] == 'OKAY'
 
+    # add the fields to the output
     direction = NetDSvr.get_direction(tokens[0])
     req["#{direction}_addr"] = tokens[4]
     req["#{direction}_port"] = tokens[5]
@@ -37,18 +41,23 @@ class NetDSvr
   end
 
   def self.parse_list(sock)
-    line = sock.readline.chomp
-    number_of_lines = line[0..-2].to_i
+    # parse the first line (number of entries)
+    number_of_lines = sock.readline.chomp[0..-2].to_i
     number_of_lines.times do
+      # pretty print the hash result from parse_line
       ap NetDSvr.parse_line sock.readline.chomp
     end
   end
 
   def current_net_ops
+    # get a list of the commands used
+    # to dispatch the network operations
     @net_ops.map(&:request).map { |v| v.values.join('|') }
   end
 
   def dispatch_command(request_args, server_socket)
+    # switch on the request type, dispatch the request,
+    # and add the object to the tracking list
     case request_args[:request]
     when NetD::OperationRequest::LOCAL_PORT_FORWARD
       @net_ops << NetD::LocalPortForward.new(request_args)
@@ -63,12 +72,18 @@ class NetDSvr
 
   def server_main
     UNIXServer.open(@path) do |serv|
+      # accept, dispatch, respond for all connections
       loop do
+        # accept new connection
         server_socket = serv.accept
+        # read command, parse it, and dispatch it
         dispatch_command(NetD::OperationRequest.new(server_socket.readline).parse, server_socket)
+        # respond with success
         server_socket.puts 'OKAY|'
       rescue EOFError, Errno::EPIPE, RuntimeError => e
+        # if connection fails or bad data is sent, report error
         @logger.error("Malformed Request: #{e.message}\n#{e.backtrace} ")
+        server_socket.puts 'ERR|' unless server_socket.closed?
       end
     end
   end

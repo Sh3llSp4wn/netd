@@ -19,12 +19,19 @@ module NetC
     class Install < Dry::CLI::Command
       desc 'Install service file to systemd user directory'
       def call(**)
+        # base64(zlib(netd.service))
         service_file_data = 'eJwljLEKgzAURfd8RZaueUJnl2KHLl1EOohDjFcNvMby8pT69xW7He65nLZJUT' \
                             'tTIQeJH41LKpsMsYwNbA/aYoAdF7FPaGVMW/+nzty/CLV60ZLWLNTHRLL2u73M5HgJninPXkAT3qegqy' \
                             'tccf4SdDhSj5TVM3fm5ZNiuO3lgNGvrO7ITlDzAyzzNxM='
+
+        # reverse the encoding process for the systemd service file
         service_file = Zlib::Inflate.inflate(Base64.decode64(service_file_data))
+        # path to install the file to
         fname = "#{Dir.home}/.config/systemd/user/netd.service"
+        # write the decoded data to the file
         File.write(fname, service_file)
+
+        # print install info
         puts "Wrote service file to #{fname}"
         puts "To enable the service, execute the following:\n"
         puts 'systemctl --user enable netd.service'
@@ -37,6 +44,8 @@ module NetC
       # list current forwards
       desc 'List the currently registered port forwards'
       def call(**)
+        # open connection to server and
+        # dispatch the list command
         NetDSvr.connect_to_netd do |socket|
           socket.puts 'list|'
           NetDSvr.parse_list socket
@@ -53,14 +62,18 @@ module NetC
         option :remote, type: :String, desc: 'Remote address to connect to'
 
         def call(host:, bind:, remote:, **)
+          # decode the bind host host_port pair
           bind_addr, bind_port = bind.split(':')
+          # decode the remote host host_port pair
           remote_addr, remote_port = remote.split(':')
+          # connect to server and send local forward request
           NetDSvr.connect_to_netd do |socket|
             socket.puts NetD::OperationRequest.local_port_forward(
               host,
               bind_port.to_i, bind_addr,
               remote_port.to_i, remote_addr
             )
+            # get OKAY message
             puts socket.readline
           end
         end
@@ -74,8 +87,11 @@ module NetC
         option :local, type: :String, desc: 'Local address to connect to'
 
         def call(host:, bind:, local:, **)
+          # decode the remote bind host host_port pair
           bind_addr, bind_port = bind.split(':')
+          # decode the local host host_port pair
           local_addr, local_port = local.split(':')
+          # connect to server and send remote forward request
           NetDSvr.connect_to_netd do |socket|
             socket.puts NetD::OperationRequest.remote_port_forward(
               host,

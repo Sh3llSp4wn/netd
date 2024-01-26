@@ -6,17 +6,19 @@ require 'socket'
 # netd namespace
 module NetD
   # encapsulates a currently running network operation
+  # Base Class
   class NetworkOperation
     attr_reader :request
+    attr_accessor :thread
 
     def initialize(_request); end
 
     def to_s
-      raise 'called to_s on base class, this is invalid'
+      @request.values.join('|')
     end
 
     def close
-      raise 'called close on base class, this is invalid'
+      @thread.thread_variable_set('stop', true)
     end
   end
 
@@ -34,14 +36,6 @@ module NetD
         end
       end
     end
-
-    def to_s
-      @request.values.join('|')
-    end
-
-    def close
-      @thread.thread_variable_set('stop', true)
-    end
   end
 
   # encapsulates a remote port_forward
@@ -57,14 +51,6 @@ module NetD
           ssh.forward.cancel_remote(req[:bind_port], req[:bind_addr])
         end
       end
-    end
-
-    def to_s
-      @request.values.join('|')
-    end
-
-    def close
-      @thread.thread_variable_set('stop', true)
     end
   end
 
