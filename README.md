@@ -29,5 +29,7 @@ SSH hosts must be set up to use paswordless access with the current users userna
 ## Install
 
 `bundler install`
+
 `gem build`
+
 `gem install netd-0.0.1.gem`
