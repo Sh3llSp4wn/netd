@@ -55,6 +55,26 @@ class NetDSvr
     @net_ops.map(&:request).map { |v| v.values.join('|') }
   end
 
+  def del_request(request_args)
+    @net_ops.each do |n|
+      case request_args[:request]
+      when NetD::OperationRequest::DELETE_LOCAL_PORT_FORWARD
+        if n.request[:remote_addr] == request_args[:remote_addr] and n.request[:remote_port] == request_args[:remote_port]
+          n.close
+          @net_ops.delete(n)
+          return true
+        end
+      when NetD::OperationRequest::DELETE_REMOTE_PORT_FORWARD
+        if n.request[:local_addr] == request_args[:local_addr] and n.request[:local_port] == request_args[:local_port]
+          n.close
+          @net_ops.delete(n)
+          return true
+        end
+      end
+    end
+    false
+  end
+
   def dispatch_command(request_args, server_socket)
     # switch on the request type, dispatch the request,
     # and add the object to the tracking list
@@ -63,6 +83,10 @@ class NetDSvr
       @net_ops << NetD::LocalPortForward.new(request_args)
     when NetD::OperationRequest::REMOTE_PORT_FORWARD
       @net_ops << NetD::RemotePortForward.new(request_args)
+    when NetD::OperationRequest::DELETE_LOCAL_PORT_FORWARD
+      del_request(request_args)
+    when NetD::OperationRequest::DELETE_REMOTE_PORT_FORWARD
+      del_request(request_args)
     when NetD::OperationRequest::LIST_FORWARDS
       server_socket.puts("#{current_net_ops.length}|\n#{current_net_ops.join("\n")}")
     else

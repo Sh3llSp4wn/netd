@@ -60,20 +60,22 @@ module NetC
         option :host, type: :String, default: '127.0.0.1', desc: 'Host address to bind to', required: true
         option :bind, type: :String, default: '127.0.0.1:8000', desc: 'Host address to bind to in <ip>:<port> format'
         option :remote, type: :String, desc: 'Remote address to connect to'
+        option :del, default: false, desc: 'Delete the specified forward'
 
-        def call(host:, bind:, remote:, **)
+        def call(host:, bind:, remote:, del:, **)
           # decode the bind host host_port pair
           bind_addr, bind_port = bind.split(':')
           # decode the remote host host_port pair
           remote_addr, remote_port = remote.split(':')
           # connect to server and send local forward request
           NetDSvr.connect_to_netd do |socket|
-            socket.puts NetD::OperationRequest.local_port_forward(
-              host,
-              bind_port.to_i, bind_addr,
-              remote_port.to_i, remote_addr
-            )
-            # get OKAY message
+            if !del
+              socket.puts NetD::OperationRequest.local_port_forward(
+                host, bind_port.to_i, bind_addr, remote_port.to_i, remote_addr
+              )
+            else
+              socket.puts NetD::OperationRequest.delete_local_port_forward(host, remote_port.to_i, remote_addr)
+            end
             puts socket.readline
           end
         end
@@ -85,19 +87,21 @@ module NetC
         option :host, type: :String, default: '127.0.0.1', desc: 'Host address to bind to', required: true
         option :bind, type: :String, default: '127.0.0.1:8000', desc: 'Remote address to bind to in <ip>:<port> format'
         option :local, type: :String, desc: 'Local address to connect to'
+        option :del, default: false, desc: 'Delete the specified forward'
 
-        def call(host:, bind:, local:, **)
+        def call(host:, bind:, local:, del:, **)
           # decode the remote bind host host_port pair
           bind_addr, bind_port = bind.split(':')
           # decode the local host host_port pair
           local_addr, local_port = local.split(':')
           # connect to server and send remote forward request
           NetDSvr.connect_to_netd do |socket|
-            socket.puts NetD::OperationRequest.remote_port_forward(
-              host,
-              bind_port.to_i, bind_addr,
-              local_port.to_i, local_addr
-            )
+            if !del
+              socket.puts NetD::OperationRequest.remote_port_forward(
+                host, bind_port.to_i, bind_addr, local_port.to_i, local_addr)
+            else
+              socket.puts NetD::OperationRequest.delete_remote_port_forward(host, local_port.to_i, local_addr)
+            end
             puts socket.readline
           end
         end
