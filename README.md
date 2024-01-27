@@ -24,3 +24,10 @@ SSH remote port forward, accepts `--local` ip port pair as an argument
 ## Requirements
 
 SSH hosts must be set up to use paswordless access with the current users username
+
+
+## Install
+
+`bundler install`
+`gem build`
+`gem install netd-0.0.1.gem`
