@@ -59,13 +59,13 @@ class NetDSvr
     @net_ops.each do |n|
       case request_args[:request]
       when NetD::OperationRequest::DELETE_LOCAL_PORT_FORWARD
-        if n.request[:remote_addr] == request_args[:remote_addr] and n.request[:remote_port] == request_args[:remote_port]
+        if (n.request[:remote_addr] == request_args[:remote_addr]) && (n.request[:remote_port] == request_args[:remote_port])
           n.close
           @net_ops.delete(n)
           return true
         end
       when NetD::OperationRequest::DELETE_REMOTE_PORT_FORWARD
-        if n.request[:local_addr] == request_args[:local_addr] and n.request[:local_port] == request_args[:local_port]
+        if (n.request[:local_addr] == request_args[:local_addr]) && (n.request[:local_port] == request_args[:local_port])
           n.close
           @net_ops.delete(n)
           return true

@@ -98,7 +98,8 @@ module NetC
           NetDSvr.connect_to_netd do |socket|
             if !del
               socket.puts NetD::OperationRequest.remote_port_forward(
-                host, bind_port.to_i, bind_addr, local_port.to_i, local_addr)
+                host, bind_port.to_i, bind_addr, local_port.to_i, local_addr
+              )
             else
               socket.puts NetD::OperationRequest.delete_remote_port_forward(host, local_port.to_i, local_addr)
             end

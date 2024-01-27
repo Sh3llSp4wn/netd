@@ -8,7 +8,7 @@ module NetD
     REMOTE_PORT_FORWARD = 'rpfwd'
     DELETE_LOCAL_PORT_FORWARD  = 'delete_lpfwd'
     DELETE_REMOTE_PORT_FORWARD = 'delete_rpfwd'
-    LIST_FORWARDS       = 'list'
+    LIST_FORWARDS = 'list'
 
     def initialize(request_str)
       malformed_request unless request_str.include? '|'
