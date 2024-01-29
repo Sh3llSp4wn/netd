@@ -10,5 +10,5 @@ Gem::Specification.new do |g|
   g.authors = ['shellspawn']
   g.email = 'shellspawn@protonmail.com'
   g.files = ['lib/netd_core.rb', 'lib/netd_core/request.rb', 'lib/netd_core/netop.rb']
-  g.licenses = ''
+  g.licenses = 'MIT'
 end
