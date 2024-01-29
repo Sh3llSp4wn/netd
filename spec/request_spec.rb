@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'netd_core/request'
 
 def expect_operation_request(req)
@@ -31,7 +33,9 @@ RSpec.describe NetD::OperationRequest do
   end
   context 'provides a sane exception interface' do
     it 'defines a malformed_request exception' do
-      expect {NetD::OperationRequest.malformed_request}.to raise_error(having_attributes(message: 'malformed request'))
+      expect do
+        NetD::OperationRequest.malformed_request
+      end.to raise_error(having_attributes(message: 'malformed request'))
     end
   end
 end
