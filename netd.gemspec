@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 Gem::Specification.new do |g|
-  g.name = 'netd'
+  g.name = 'netd_mngr'
   g.version = '0.0.1'
   g.required_ruby_version = '>= 3.0.0'
   g.executables = %w[netd netc]
