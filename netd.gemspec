@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |g|
   g.name = 'netd'
-  g.version = '0.0.1'
+  g.version = '0.0.2'
   g.required_ruby_version = '>= 3.0.0'
   g.executables = %w[netd netc]
   g.summary = 'Server used for background port fwds'
