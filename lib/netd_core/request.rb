@@ -74,7 +74,7 @@ module NetD
       "#{DELETE_REMOTE_PORT_FORWARD}|#{host}|#{local_addr}|#{local_port}"
     end
 
-    def malformed_request
+    def self.malformed_request
       raise 'malformed request'
     end
   end
