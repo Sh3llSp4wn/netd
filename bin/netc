@@ -5,6 +5,7 @@ require 'netd_core'
 require 'logger'
 require 'zlib'
 require 'base64'
+require 'json'
 
 require 'dry/cli'
 require 'awesome_print'
@@ -48,7 +49,7 @@ module NetC
         # dispatch the list command
         NetDSvr.connect_to_netd do |socket|
           socket.puts 'list|'
-          NetDSvr.parse_list socket
+          puts JSON.generate(NetDSvr.parse_list(socket))
         end
       end
     end

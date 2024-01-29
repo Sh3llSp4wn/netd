@@ -42,11 +42,13 @@ class NetDSvr
 
   def self.parse_list(sock)
     # parse the first line (number of entries)
+    entries = []
     number_of_lines = sock.readline.chomp[0..-2].to_i
     number_of_lines.times do
       # pretty print the hash result from parse_line
-      ap NetDSvr.parse_line sock.readline.chomp
+      entries << NetDSvr.parse_line(sock.readline.chomp)
     end
+    entries
   end
 
   def current_net_ops
